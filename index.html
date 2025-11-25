@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DONKEY KONG - Complete Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #container {
+            text-align: center;
+            max-width: 900px;
+            width: 100%;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 48px;
+            color: #ff0;
+            text-shadow: 3px 3px #f00;
+            margin-bottom: 20px;
+            letter-spacing: 3px;
+            animation: titleBounce 2s infinite;
+        }
+        @keyframes titleBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .screen {
+            display: none;
+        }
+        .screen.active {
+            display: block;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #0ff;
+        }
+        input, select {
+            width: 100%;
+            max-width: 300px;
+            padding: 10px;
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #0f0;
+            border: 3px solid #0f0;
+            text-align: center;
+        }
+        button {
+            padding: 15px 40px;
+            font-size: 24px;
+            font-family: 'Courier New', monospace;
+            background: #f00;
+            color: #fff;
+            border: 3px solid #ff0;
+            cursor: pointer;
+            margin: 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #ff0;
+            color: #000;
+            transform: scale(1.1);
+        }
+        #gameCanvas {
+            border: 5px solid #0f0;
+            background: #000080;
+            display: block;
+            margin: 20px auto;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        #gameInfo {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            font-size: 22px;
+            color: #ff0;
+            flex-wrap: wrap;
+        }
+        #gameInfo > div {
+            margin: 5px 10px;
+        }
+        #leaderboard {
+            margin-top: 20px;
+            background: #001;
+            border: 3px solid #0f0;
+            padding: 20px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #leaderboard h2 {
+            color: #ff0;
+            margin-bottom: 15px;
+            font-size: 28px;
+        }
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #0f0;
+            font-size: 18px;
+        }
+        .leaderboard-entry:nth-child(1) { color: #ffd700; font-size: 20px; }
+        .leaderboard-entry:nth-child(2) { color: #c0c0c0; }
+        .leaderboard-entry:nth-child(3) { color: #cd7f32; }
+        #instructions {
+            margin: 20px 0;
+            color: #0ff;
+            font-size: 18px;
+        }
+        .blink {
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        #stageComplete {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #000;
+            border: 5px solid #ff0;
+            padding: 40px;
+            font-size: 32px;
+            color: #ff0;
+            z-index: 1000;
+            display: none;
+        }
+        #stageComplete.active {
+            display: block;
+            animation: popup 0.5s;
+        }
+        @keyframes popup {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        .difficulty-selector {
+            margin: 20px 0;
+        }
+        .difficulty-btn {
+            padding: 10px 20px;
+            font-size: 18px;
+            margin: 5px;
+        }
+        .difficulty-btn.selected {
+            background: #0f0;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>🦍 DONKEY KONG 🦍</h1>
+        
+        <div id="loginScreen" class="screen active">
+            <p style="font-size: 24px; margin: 30px 0; color: #ff0;">
+                INSERT COIN TO PLAY
+                <span class="blink" style="color: #f00;">█</span>
+            </p>
+            <div class="input-group">
+                <label>이름 NAME:</label>
+                <input type="text" id="playerName" placeholder="이름 입력" maxlength="20">
+            </div>
+            <div class="input-group">
+                <label>학번 STUDENT ID:</label>
+                <input type="text" id="studentId" placeholder="학번 입력" maxlength="20">
+            </div>
+            <div class="difficulty-selector">
+                <label>난이도 DIFFICULTY:</label>
+                <button class="difficulty-btn selected" onclick="selectDifficulty('easy')">EASY</button>
+                <button class="difficulty-btn" onclick="selectDifficulty('normal')">NORMAL</button>
+                <button class="difficulty-btn" onclick="selectDifficulty('hard')">HARD</button>
+                <button class="difficulty-btn" onclick="selectDifficulty('insane')">INSANE</button>
+            </div>
+            <button onclick="startGame()">START GAME</button>
+            <div id="instructions">
+                <p>← → 좌우이동 MOVE LEFT/RIGHT</p>
+                <p>↑ 사다리 올라가기 CLIMB UP</p>
+                <p>↓ 사다리 내려가기 CLIMB DOWN</p>
+                <p>SPACE 점프 JUMP</p>
+            </div>
+        </div>
+
+        <div id="gameScreen" class="screen">
+            <div id="gameInfo">
+                <div>SCORE: <span id="score">0</span></div>
+                <div>HI-SCORE: <span id="hiScore">0</span></div>
+                <div>LIVES: <span id="lives">❤️❤️❤️</span></div>
+                <div>STAGE: <span id="stage">1</span></div>
+                <div>BONUS: <span id="bonus">5000</span></div>
+            </div>
+            <canvas id="gameCanvas" width="700" height="700"></canvas>
+            <div style="margin: 10px 0;">
+                <button onclick="pauseGame()">PAUSE</button>
+                <button onclick="returnToMenu()">QUIT</button>
+            </div>
+            
+            <div id="leaderboard">
+                <h2>🏆 HALL OF FAME 🏆</h2>
+                <div id="leaderboardList">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="stageComplete">
+        <div id="stageCompleteText"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, push, onValue, query, orderByChild, limitToLast } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let player = { 
+            x: 50, y: 640, width: 25, height: 35, 
+            jumping: false, climbing: false, velocityY: 0,
+            direction: 1, invincible: 0
+        };
+        let barrels = [];
+        let score = 0;
+        let hiScore = 0;
+        let lives = 3;
+        let stage = 1;
+        let bonus = 5000;
+        let gameRunning = false;
+        let gamePaused = false;
+        let playerName = '';
+        let studentId = '';
+        let difficulty = 'easy';
+        let keys = {};
+        let animFrame = 0;
+        let barrelSpawnTimer = 0;
+        let bonusTimer = 0;
+
+        const difficultySettings = {
+            easy: { barrelSpeed: 2, spawnRate: 0.015, barrelCount: 1 },
+            normal: { barrelSpeed: 3, spawnRate: 0.02, barrelCount: 2 },
+            hard: { barrelSpeed: 4, spawnRate: 0.025, barrelCount: 3 },
+            insane: { barrelSpeed: 5, spawnRate: 0.035, barrelCount: 4 }
+        };
+
+        const stages = [
+            {
+                platforms: [
+                    { x: 0, y: 670, width: 700, height: 15 },
+                    { x: 50, y: 580, width: 600, height: 15 },
+                    { x: 50, y: 490, width: 600, height: 15 },
+                    { x: 50, y: 400, width: 600, height: 15 },
+                    { x: 50, y: 310, width: 600, height: 15 },
+                    { x: 50, y: 220, width: 600, height: 15 },
+                    { x: 200, y: 130, width: 300, height: 15 }
+                ],
+                ladders: [
+                    { x: 620, y: 595, width: 30, height: 75 },
+                    { x: 70, y: 505, width: 30, height: 75 },
+                    { x: 620, y: 415, width: 30, height: 75 },
+                    { x: 70, y: 325, width: 30, height: 75 },
+                    { x: 620, y: 235, width: 30, height: 75 },
+                    { x: 350, y: 145, width: 30, height: 75 }
+                ],
+                princess: { x: 330, y: 90 },
+                kong: { x: 250, y: 80 }
+            },
+            {
+                platforms: [
+                    { x: 0, y: 670, width: 700, height: 15 },
+                    { x: 100, y: 580, width: 500, height: 15 },
+                    { x: 100, y: 490, width: 500, height: 15 },
+                    { x: 100, y: 400, width: 500, height: 15 },
+                    { x: 100, y: 310, width: 500, height: 15 },
+                    { x: 250, y: 220, width: 300, height: 15 },
+                    { x: 250, y: 130, width: 200, height: 15 }
+                ],
+                ladders: [
+                    { x: 550, y: 595, width: 30, height: 75 },
+                    { x: 120, y: 505, width: 30, height: 75 },
+                    { x: 550, y: 415, width: 30, height: 75 },
+                    { x: 120, y: 325, width: 30, height: 75 },
+                    { x: 450, y: 235, width: 30, height: 75 },
+                    { x: 350, y: 145, width: 30, height: 75 }
+                ],
+                princess: { x: 320, y: 90 },
+                kong: { x: 280, y: 80 }
+            },
+            {
+                platforms: [
+                    { x: 0, y: 670, width: 700, height: 15 },
+                    { x: 0, y: 560, width: 300, height: 15 },
+                    { x: 400, y: 560, width: 300, height: 15 },
+                    { x: 150, y: 450, width: 400, height: 15 },
+                    { x: 0, y: 340, width: 300, height: 15 },
+                    { x: 400, y: 340, width: 300, height: 15 },
+                    { x: 150, y: 230, width: 400, height: 15 },
+                    { x: 250, y: 130, width: 200, height: 15 }
+                ],
+                ladders: [
+                    { x: 280, y: 575, width: 30, height: 95 },
+                    { x: 200, y: 465, width: 30, height: 85 },
+                    { x: 500, y: 465, width: 30, height: 85 },
+                    { x: 280, y: 355, width: 30, height: 85 },
+                    { x: 200, y: 245, width: 30, height: 85 },
+                    { x: 350, y: 145, width: 30, height: 85 }
+                ],
+                princess: { x: 320, y: 90 },
+                kong: { x: 280, y: 80 }
+            }
+        ];
+
+        let currentStage = stages[0];
+
+        window.selectDifficulty = function(level) {
+            difficulty = level;
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        };
+
+        window.startGame = function() {
+            const name = document.getElementById('playerName').value.trim();
+            const id = document.getElementById('studentId').value.trim();
+            
+            if (!name || !id) {
+                alert('이름과 학번을 모두 입력해주세요!');
+                return;
+            }
+
+            playerName = name;
+            studentId = id;
+            
+            document.getElementById('loginScreen').classList.remove('active');
+            document.getElementById('gameScreen').classList.add('active');
+            
+            resetGame();
+            loadLeaderboard();
+            loadHiScore();
+            gameLoop();
+        };
+
+        window.returnToMenu = function() {
+            gameRunning = false;
+            gamePaused = false;
+            document.getElementById('gameScreen').classList.remove('active');
+            document.getElementById('loginScreen').classList.add('active');
+        };
+
+        window.pauseGame = function() {
+            gamePaused = !gamePaused;
+            event.target.textContent = gamePaused ? 'RESUME' : 'PAUSE';
+            if (!gamePaused) gameLoop();
+        };
+
+        function resetGame() {
+            stage = 1;
+            score = 0;
+            lives = 3;
+            bonus = 5000;
+            resetStage();
+            updateUI();
+            gameRunning = true;
+            gamePaused = false;
+        }
+
+        function resetStage() {
+            currentStage = stages[(stage - 1) % stages.length];
+            player = { 
+                x: 50, y: currentStage.platforms[0].y - 35, 
+                width: 25, height: 35, 
+                jumping: false, climbing: false, velocityY: 0,
+                direction: 1, invincible: 0
+            };
+            barrels = [];
+            bonus = 5000;
+            bonusTimer = 0;
+        }
+
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('lives').textContent = '❤️'.repeat(lives);
+            document.getElementById('stage').textContent = stage;
+            document.getElementById('bonus').textContent = bonus;
+        }
+
+        function loadHiScore() {
+            const scoresRef = ref(database, 'scores');
+            const topScoresQuery = query(scoresRef, orderByChild('score'), limitToLast(1));
+            
+            onValue(topScoresQuery, (snapshot) => {
+                snapshot.forEach((childSnapshot) => {
+                    hiScore = Math.max(hiScore, childSnapshot.val().score);
+                    document.getElementById('hiScore').textContent = hiScore;
+                });
+            });
+        }
+
+        function spawnBarrel() {
+            const settings = difficultySettings[difficulty];
+            barrelSpawnTimer++;
+            
+            if (gameRunning && !gamePaused && Math.random() < settings.spawnRate) {
+                const kongPos = currentStage.kong;
+                for (let i = 0; i < settings.barrelCount; i++) {
+                    barrels.push({ 
+                        x: kongPos.x + Math.random() * 40, 
+                        y: kongPos.y + 60, 
+                        width: 25, 
+                        height: 25, 
+                        vx: settings.barrelSpeed * (Math.random() > 0.5 ? 1 : -1), 
+                        vy: 0,
+                        rolling: true
+                    });
+                }
+            }
+        }
+
+        function updateBarrels() {
+            const settings = difficultySettings[difficulty];
+            
+            barrels.forEach((barrel, index) => {
+                barrel.vy += 0.5;
+                barrel.y += barrel.vy;
+                barrel.x += barrel.vx;
+
+                let onPlatform = false;
+                currentStage.platforms.forEach(platform => {
+                    if (barrel.y + barrel.height >= platform.y &&
+                        barrel.y + barrel.height <= platform.y + 20 &&
+                        barrel.x + barrel.width > platform.x &&
+                        barrel.x < platform.x + platform.width) {
+                        barrel.y = platform.y - barrel.height;
+                        barrel.vy = 0;
+                        onPlatform = true;
+                        
+                        if (Math.random() < 0.1 && barrel.rolling) {
+                            barrel.rolling = false;
+                            barrel.vy = -8;
+                        }
+                    }
+                });
+
+                if (barrel.x < 0 || barrel.x > 700 || barrel.y > 700) {
+                    barrels.splice(index, 1);
+                    score += 50;
+                }
+
+                if (!player.invincible && checkCollision(player, barrel)) {
+                    lives--;
+                    player.invincible = 120;
+                    updateUI();
+                    barrels.splice(index, 1);
+                    
+                    if (lives <= 0) {
+                        gameOver();
+                    }
+                }
+            });
+        }
+
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        function updatePlayer() {
+            if (player.invincible > 0) player.invincible--;
+
+            const onLadder = currentStage.ladders.find(ladder => 
+                player.x + player.width > ladder.x &&
+                player.x < ladder.x + ladder.width &&
+                player.y + player.height >= ladder.y &&
+                player.y <= ladder.y + ladder.height
+            );
+
+            if (onLadder) {
+                if (keys['ArrowUp']) {
+                    player.climbing = true;
+                    player.jumping = false;
+                    player.y -= 3;
+                    player.velocityY = 0;
+                } else if (keys['ArrowDown']) {
+                    player.climbing = true;
+                    player.jumping = false;
+                    player.y += 3;
+                    player.velocityY = 0;
+                } else if (!keys['ArrowUp'] && !keys['ArrowDown']) {
+                    player.climbing = false;
+                }
+            } else {
+                player.climbing = false;
+            }
+
+            if (!player.climbing) {
+                if (keys['ArrowLeft']) {
+                    player.x = Math.max(0, player.x - 4);
+                    player.direction = -1;
+                }
+                if (keys['ArrowRight']) {
+                    player.x = Math.min(700 - player.width, player.x + 4);
+                    player.direction = 1;
+                }
+
+                if (player.jumping || !onPlatform()) {
+                    player.velocityY += 0.6;
+                    player.y += player.velocityY;
+                }
+
+                checkPlatformCollision();
+            }
+
+            if (checkCollision(player, { 
+                x: currentStage.princess.x, 
+                y: currentStage.princess.y, 
+                width: 40, 
+                height: 40 
+            })) {
+                completeStage();
+            }
+        }
+
+        function onPlatform() {
+            for (let platform of currentStage.platforms) {
+                if (player.y + player.height >= platform.y &&
+                    player.y + player.height <= platform.y + 20 &&
+                    player.x + player.width > platform.x &&
+                    player.x < platform.x + platform.width) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function checkPlatformCollision() {
+            currentStage.platforms.forEach(platform => {
+                if (player.y + player.height >= platform.y &&
+                    player.y + player.height <= platform.y + 25 &&
+                    player.x + player.width > platform.x &&
+                    player.x < platform.x + platform.width &&
+                    player.velocityY >= 0) {
+                    player.y = platform.y - player.height;
+                    player.jumping = false;
+                    player.velocityY = 0;
+                }
+            });
+        }
+
+        function completeStage() {
+            gameRunning = false;
+            score += bonus;
+            score += 1000 * stage;
+            
+            const completeDiv = document.getElementById('stageComplete');
+            const completeText = document.getElementById('stageCompleteText');
+            completeText.innerHTML = `
+                STAGE ${stage} COMPLETE!<br><br>
+                BONUS: ${bonus}<br>
+                STAGE BONUS: ${1000 * stage}<br><br>
+                <span class="blink">NEXT STAGE...</span>
+            `;
+            completeDiv.classList.add('active');
+            
+            setTimeout(() => {
+                completeDiv.classList.remove('active');
+                stage++;
+                updateUI();
+                resetStage();
+                gameRunning = true;
+                gameLoop();
+            }, 3000);
+        }
+
+        function draw() {
+            ctx.fillStyle = '#000080';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#8B4513';
+            currentStage.platforms.forEach(platform => {
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                
+                for (let i = 0; i < platform.width; i += 25) {
+                    ctx.strokeStyle = '#654321';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(platform.x + i, platform.y, 25, platform.height);
+                }
+            });
+
+            ctx.fillStyle = '#FF6347';
+            currentStage.ladders.forEach(ladder => {
+                for (let i = 0; i < ladder.height; i += 15) {
+                    ctx.fillRect(ladder.x, ladder.y + i, 5, 15);
+                    ctx.fillRect(ladder.x + 25, ladder.y + i, 5, 15);
+                    ctx.fillRect(ladder.x, ladder.y + i, 30, 3);
+                }
+            });
+
+            if (player.invincible % 10 < 5 || player.invincible === 0) {
+                ctx.fillStyle = '#DC143C';
+                ctx.fillRect(player.x, player.y, player.width, player.height);
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(player.x + player.width / 2, player.y + 6, 6, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#FFD700';
+                ctx.fillRect(player.x + 5, player.y + 15, 4, 8);
+                ctx.fillRect(player.x + 16, player.y + 15, 4, 8);
+            }
+
+            ctx.fillStyle = '#8B4513';
+            barrels.forEach(barrel => {
+                ctx.save();
+                ctx.translate(barrel.x + barrel.width/2, barrel.y + barrel.height/2);
+                ctx.rotate(animFrame * 0.1);
+                ctx.fillRect(-barrel.width/2, -barrel.height/2, barrel.width, barrel.height);
+                ctx.strokeStyle = '#654321';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(-barrel.width/2, -barrel.height/2, barrel.width, barrel.height);
+                ctx.restore();
+            });
+
+            const kong = currentStage.kong;
+            ctx.font = 'bold 50px Arial';
+            ctx.fillText('🦍', kong.x, kong.y + 50);
+            
+            const princess = currentStage.princess;
+            ctx.fillText('👸', princess.x, princess.y + 40);
+
+            if (gamePaused) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#ff0';
+                ctx.font = 'bold 48px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        function gameLoop() {
+            if (!gameRunning || gamePaused) return;
+
+            animFrame++;
+            bonusTimer++;
+            
+            if (bonusTimer % 60 === 0 && bonus > 0) {
+                bonus = Math.max(0, bonus - 100);
+                updateUI();
+            }
+
+            spawnBarrel();
+            updatePlayer();
+            updateBarrels();
+            draw();
+            updateUI();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            
+            const finalScore = score;
+            
+            const scoresRef = ref(database, 'scores');
+            push(scoresRef, {
+                name: playerName,
+                studentId: studentId,
+                score: finalScore,
+                stage: stage,
+                difficulty: difficulty,
+                timestamp: Date.now()
+            });
+
+            setTimeout(() => {
+                alert(`GAME OVER!\n\n${playerName}님의 최종 점수: ${finalScore}\n도달 스테이지: ${stage}\n난이도: ${difficulty.toUpperCase()}`);
+                loadLeaderboard();
+            }, 500);
+        }
+
+        function loadLeaderboard() {
+            const scoresRef = ref(database, 'scores');
+            const topScoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
+            
+            onValue(topScoresQuery, (snapshot) => {
+                const scores = [];
+                snapshot.forEach((childSnapshot) => {
+                    scores.push(childSnapshot.val());
+                });
+                
+                scores.sort((a, b) => b.score - a.score);
+                
+                const leaderboardList = document.getElementById('leaderboardList');
+                if (scores.length === 0) {
+                    leaderboardList.innerHTML = '<div class="leaderboard-entry">아직 기록이 없습니다</div>';
+                } else {
+                    leaderboardList.innerHTML = scores.map((score, index) => `
+                        <div class="leaderboard-entry">
+                            <span>${index + 1}. ${score.name} (${score.studentId}) - Stage ${score.stage || 1}</span>
+                            <span>${score.score} [${(score.difficulty || 'easy').toUpperCase()}]</span>
+                        </div>
+                    `).join('');
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            
+            if (e.key === ' ' && !player.jumping && !player.climbing && gameRunning && !gamePaused) {
+                player.jumping = true;
+                player.velocityY = -12;
+                e.preventDefault();
+            }
+
+            if (e.key === 'p' || e.key === 'P') {
+                pauseGame();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        loadLeaderboard();
+    </script>
+</body>
+</html>
